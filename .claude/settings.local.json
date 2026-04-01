@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(python3:*)",
+      "Bash(find:*)",
+      "Bash(npm create:*)",
+      "Bash(chmod:*)",
+      "Bash(sqlite3:*)",
+      "Bash(source:*)",
+      "Bash(pip install:*)",
+      "Bash(./venv/bin/pip install:*)",
+      "Bash(./venv/bin/python3 -c \"\nimport sys\nsys.path.insert\\(0, ''..''\\)\nfrom app.services.sc_executor import ScriptExecutor\nfrom pathlib import Path\n\ntry:\n    executor = ScriptExecutor\\(base_dir=Path\\(''..''\\)\\)\n    print\\(''Testing script executor...''\\)\n    result = executor.run_songs\\(1\\)  # Just 1 hour for quick test\n    print\\(f''✓ Success! Found {len\\(result.get\\(\"\"songs\"\", []\\)\\)} songs''\\)\nexcept Exception as e:\n    print\\(f''✗ Error: {e}''\\)\n    import traceback\n    traceback.print_exc\\(\\)\n\")",
+      "Bash(/Users/william/Documents/Claude_SC_Weekly_Song_Updater/backend/venv/bin/python3:*)"
+    ]
+  }
+}

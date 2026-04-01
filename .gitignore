@@ -1,0 +1,7 @@
+secrets.env
+sc_token.json
+backend/venv/
+frontend/node_modules/
+__pycache__/
+data/app.db
+.DS_Store
