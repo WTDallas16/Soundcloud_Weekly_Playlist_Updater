@@ -60,7 +60,13 @@ jobs:
               output.write(f"trigger_cron={cron}\n")
               output.write(f"is_dst={str(is_dst).lower()}\n")
           PY
-
+      - name: Log schedule decision
+        if: github.event_name == 'schedule'
+        run: |
+          echo "trigger cron: ${{ steps.schedule_guard.outputs.trigger_cron }}"
+          echo "local time:    ${{ steps.schedule_guard.outputs.local_time }}"
+          echo "is dst:        ${{ steps.schedule_guard.outputs.is_dst }}"
+          echo "should run:    ${{ steps.schedule_guard.outputs.should_run }}"
       - name: Set up Python
         if: github.event_name == 'workflow_dispatch' || steps.schedule_guard.outputs.should_run == 'true'
         uses: actions/setup-python@v5
