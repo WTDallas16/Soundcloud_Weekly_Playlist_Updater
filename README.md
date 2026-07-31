@@ -6,21 +6,19 @@ This project automates your weekly SoundCloud workflow:
 - finds new albums and likes them
 - updates your target playlist
 - stores run history in SQLite
-- can run locally through the web app or automatically in GitHub Actions
+- runs automatically via GitHub Actions (scheduled weekly or manual trigger)
 
 ## Project Structure
 
 - [runzIt.py](/Users/WillyTardif/Documents/Claude_SC_Weekly_Song_Updater/runzIt.py): original weekly runner
-- [scheduled_run.py](/Users/WillyTardif/Documents/Claude_SC_Weekly_Song_Updater/scheduled_run.py): headless runner for automation
+- [scheduled_run.py](/Users/WillyTardif/Documents/Claude_SC_Weekly_Song_Updater/scheduled_run.py): headless runner for automation and GitHub Actions
 - [getNewSongs.py](/Users/WillyTardif/Documents/Claude_SC_Weekly_Song_Updater/getNewSongs.py): fetches new tracks and updates the playlist
 - [getNewAlbums.py](/Users/WillyTardif/Documents/Claude_SC_Weekly_Song_Updater/getNewAlbums.py): finds albums and likes them
-- [backend](/Users/WillyTardif/Documents/Claude_SC_Weekly_Song_Updater/backend): FastAPI backend and database tracking
-- [frontend](/Users/WillyTardif/Documents/Claude_SC_Weekly_Song_Updater/frontend): React dashboard
+- [backend](/Users/WillyTardif/Documents/Claude_SC_Weekly_Song_Updater/backend): Database models and OAuth token management
 
 ## Requirements
 
 - Python 3.8+
-- Node.js 18+ for the frontend
 - SoundCloud OAuth credentials in `secrets.env`
 - A valid token in `sc_token.json`
 
@@ -40,25 +38,9 @@ SC_FILTER_MODE=activity
 
 ## Local Usage
 
-### Web App
+### Headless Run (Recommended)
 
-Start the backend:
-
-```bash
-./start_backend.sh
-```
-
-Start the frontend in a second terminal:
-
-```bash
-./start_frontend.sh
-```
-
-Then open `http://localhost:5173`.
-
-### Headless Run
-
-Run the weekly job directly without the UI:
+Run the weekly job:
 
 ```bash
 python3 scheduled_run.py
@@ -102,8 +84,6 @@ Keep `secrets.env` and `sc_token.json` private.
 
 - [QUICK_START.md](/Users/WillyTardif/Documents/Claude_SC_Weekly_Song_Updater/QUICK_START.md)
 - [GETTING_STARTED.md](/Users/WillyTardif/Documents/Claude_SC_Weekly_Song_Updater/GETTING_STARTED.md)
-- [README_WEB_APP.md](/Users/WillyTardif/Documents/Claude_SC_Weekly_Song_Updater/README_WEB_APP.md)
-- [PROJECT_SUMMARY.md](/Users/WillyTardif/Documents/Claude_SC_Weekly_Song_Updater/PROJECT_SUMMARY.md)
+- [GITHUB_ACTIONS_SETUP.md](/Users/WillyTardif/Documents/Claude_SC_Weekly_Song_Updater/GITHUB_ACTIONS_SETUP.md)
 
-
-- Updated for action 06/26/2026
+- Updated for headless mode 07/31/2026

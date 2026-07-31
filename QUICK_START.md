@@ -3,80 +3,70 @@
 ## Prerequisites Check
 ```bash
 python3 --version   # Need 3.8+
-node --version      # Need 18+
 ls secrets.env      # Should exist
 ls sc_token.json    # Should exist (run python3 SC_Token.py if missing)
 ```
 
-## Start Application
+## Run Locally
 
-**Terminal 1 - Backend:**
+**Single run (7 days):**
 ```bash
-./start_backend.sh
+python3 scheduled_run.py
 ```
-Wait for: "Uvicorn running on http://127.0.0.1:8000"
 
-**Terminal 2 - Frontend:**
+**Custom period (24 hours):**
 ```bash
-./start_frontend.sh
-```
-Wait for: "Local: http://localhost:5173/"
-
-**Browser:**
-```
-http://localhost:5173
+python3 scheduled_run.py --hours-back 24
 ```
 
-## First Run
+**Original orchestrator:**
+```bash
+python3 runzIt.py
+```
 
-1. Check green dot in header (authenticated)
-2. Leave default 168 hours (7 days)
-3. Click "Start Run"
-4. Wait for status: RUNNING → COMPLETED
-5. View songs and albums in tables
-6. Scroll down to see history graph
+## Verify
+
+Check the output for:
+- Number of songs found and added
+- Number of albums found and liked
+- Database records saved to `data/app.db`
+
+Verify database:
+```bash
+sqlite3 data/app.db "SELECT * FROM runs ORDER BY created_at DESC LIMIT 1;"
+```
+
+## GitHub Actions
+
+This app runs automatically every Friday at 9:20 AM Eastern.
+
+Manual trigger:
+```bash
+gh workflow run weekly-update.yml
+```
+
+Set up secrets first - see `GITHUB_ACTIONS_SETUP.md`
 
 ## Troubleshooting
-
-**Backend won't start?**
-```bash
-cd backend
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-**Frontend won't start?**
-```bash
-cd frontend
-npm install
-```
 
 **Token expired?**
 ```bash
 python3 SC_Token.py
 ```
 
+**403 Forbidden error on token refresh?**
+This means your OAuth credentials are invalid or revoked.
+Run `SC_Token.py` to re-authenticate with SoundCloud.
+
 **Reset database?**
 ```bash
 rm data/app.db
-# Restart backend
+# Next run will create new database
 ```
-
-## API Endpoints
-
-- Frontend: http://localhost:5173
-- Backend: http://localhost:8000
-- API Docs: http://localhost:8000/docs
-- Health: http://localhost:8000/api/health
-- Auth Status: http://localhost:8000/api/auth/status
-
-## Stop Application
-
-Press `Ctrl+C` in both terminals
 
 ## Next Steps
 
 See detailed guides:
 - `GETTING_STARTED.md` - Full setup instructions
-- `README_WEB_APP.md` - Architecture and features
-- `PROJECT_SUMMARY.md` - Implementation details
+- `GITHUB_ACTIONS_SETUP.md` - Automate with GitHub Actions
+- `PROJECT_SUMMARY.md` - Architecture and implementation

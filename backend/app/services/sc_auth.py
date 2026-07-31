@@ -59,6 +59,13 @@ class SCAuthService:
         if not refresh_token:
             raise ValueError("No refresh_token found in token data")
 
+        # Validate that credentials are available
+        if not settings.sc_client_id or not settings.sc_client_secret:
+            raise ValueError(
+                "SoundCloud OAuth credentials not found. "
+                "Please ensure SC_CLIENT_ID and SC_CLIENT_SECRET are set in secrets.env"
+            )
+
         payload = {
             'grant_type': 'refresh_token',
             'client_id': settings.sc_client_id,
@@ -66,8 +73,32 @@ class SCAuthService:
             'refresh_token': refresh_token
         }
 
-        response = requests.post(self.TOKEN_URL, data=payload)
-        response.raise_for_status()
+        try:
+            response = requests.post(self.TOKEN_URL, data=payload, timeout=10)
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            if response.status_code == 403:
+                raise ValueError(
+                    "Token refresh failed with 403 Forbidden. This typically means:\n"
+                    "1. SC_CLIENT_ID or SC_CLIENT_SECRET is invalid or has been revoked\n"
+                    "2. The SoundCloud OAuth app credentials need to be regenerated\n"
+                    "3. The refresh_token has been revoked by SoundCloud\n\n"
+                    "Please re-authenticate by running SC_Token.py to generate a new token."
+                ) from e
+            elif response.status_code == 401:
+                raise ValueError(
+                    "Token refresh failed with 401 Unauthorized. "
+                    "The refresh_token may be invalid or expired. "
+                    "Please re-authenticate by running SC_Token.py."
+                ) from e
+            else:
+                raise ValueError(
+                    f"Token refresh failed: {response.status_code} {response.text}"
+                ) from e
+        except requests.exceptions.RequestException as e:
+            raise ValueError(
+                f"Token refresh failed due to network error: {e}"
+            ) from e
 
         new_token_data = response.json()
 

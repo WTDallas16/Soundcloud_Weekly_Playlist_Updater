@@ -1,6 +1,6 @@
-# Getting Started with SoundCloud Weekly Updater Web App
+# Getting Started with SoundCloud Weekly Updater
 
-This guide will help you set up and run the web application for the first time.
+This guide will help you set up and run the SoundCloud automation system.
 
 ## Prerequisites
 
@@ -11,261 +11,242 @@ Before starting, ensure you have:
    python3 --version
    ```
 
-2. **Node.js 18+** and npm installed
-   ```bash
-   node --version
-   npm --version
-   ```
-
-3. **SoundCloud OAuth credentials** in `secrets.env`:
+2. **SoundCloud OAuth credentials** in `secrets.env`:
    ```env
    SC_CLIENT_ID=your_client_id_here
    SC_CLIENT_SECRET=your_client_secret_here
    ```
 
-4. **Valid OAuth token** in `sc_token.json`:
+3. **Valid OAuth token** in `sc_token.json`:
    - If you don't have this, run: `python3 SC_Token.py`
    - Follow the OAuth flow to generate your token
 
-## Quick Start (Recommended)
+## Installation
 
-### Option 1: Using Startup Scripts
+### Step 1: Install Python Dependencies
 
-**Terminal 1 - Backend:**
 ```bash
-./start_backend.sh
-```
-
-**Terminal 2 - Frontend:**
-```bash
-./start_frontend.sh
-```
-
-The scripts will automatically:
-- Create virtual environments
-- Install dependencies
-- Start both servers
-
-### Option 2: Manual Setup
-
-**Terminal 1 - Backend:**
-```bash
-# Navigate to backend
 cd backend
-
-# Create virtual environment
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
 pip install -r requirements.txt
-
-# Start server
-uvicorn app.main:app --reload --port 8000
 ```
 
-**Terminal 2 - Frontend:**
+### Step 2: Verify OAuth Token
+
 ```bash
-# Navigate to frontend
-cd frontend
+# Check if you have a valid token
+ls sc_token.json
 
-# Install dependencies
-npm install
-
-# Start dev server
-npm run dev
+# If not, generate one:
+python3 SC_Token.py
 ```
 
-## Verify Installation
+## Quick Start
 
-### Step 1: Check Backend
+### Run a Single Update
 
-1. Open http://localhost:8000/docs
-2. You should see the FastAPI Swagger documentation
-3. Try the `/api/health` endpoint - should return `{"status": "ok"}`
-4. Try the `/api/auth/status` endpoint - should show `authenticated: true`
-
-### Step 2: Check Frontend
-
-1. Open http://localhost:5173
-2. You should see the SoundCloud Weekly Updater dashboard
-3. Look for the green authentication indicator in the header
-4. The form to create a new run should be visible
-
-### Step 3: Test a Run
-
-1. In the frontend, enter hours to look back (try 24 for testing)
-2. Click "Start Run"
-3. Watch the status change from "RUNNING" to "COMPLETED"
-4. View the songs and albums found
-5. Check that albums show "✓ Liked" status
-
-## Troubleshooting
-
-### Backend Issues
-
-**Error: `ModuleNotFoundError: No module named 'fastapi'`**
-- Solution: Activate venv and install dependencies
-  ```bash
-  cd backend
-  source venv/bin/activate
-  pip install -r requirements.txt
-  ```
-
-**Error: `FileNotFoundError: Token file not found`**
-- Solution: Generate OAuth token
-  ```bash
-  python3 SC_Token.py
-  ```
-
-**Error: Token expired or authentication failed**
-- Solution: The app should auto-refresh tokens, but if it fails:
-  ```bash
-  python3 SC_Token.py  # Regenerate token
-  rm data/app.db       # Clear database (optional)
-  ```
-
-**Error: `ImportError: cannot import name 'SCClient'`**
-- This is expected - our app reimplements SCClient
-- Verify `backend/app/services/sc_client.py` exists
-
-### Frontend Issues
-
-**Error: `ECONNREFUSED` when making API calls**
-- Solution: Ensure backend is running on port 8000
-  ```bash
-  curl http://localhost:8000/api/health
-  ```
-
-**Blank page or React errors**
-- Solution: Clear node_modules and reinstall
-  ```bash
-  cd frontend
-  rm -rf node_modules
-  npm install
-  npm run dev
-  ```
-
-**CORS errors in browser console**
-- Solution: Verify CORS settings in `backend/app/main.py`
-- Ensure frontend is on http://localhost:5173
-
-### Script Execution Issues
-
-**Error: `Script not found: getNewSongs.py`**
-- Solution: Verify you're running from project root
-- Check that `getNewSongs.py` and `getNewAlbums.py` exist
-
-**Error: Albums not being liked**
-- Check backend logs for "Error liking album" messages
-- Verify OAuth token has proper permissions
-- Test manually: `python3 getNewAlbums.py`
-
-**Run stays in "running" status forever**
-- Check backend terminal for error messages
-- Query database to see error_message:
-  ```bash
-  sqlite3 data/app.db "SELECT * FROM runs WHERE status='running';"
-  ```
-
-### Database Issues
-
-**Want to reset everything?**
 ```bash
-# Stop both servers (Ctrl+C)
-rm data/app.db
-# Restart backend - tables will be recreated
+# Full week (7 days)
+python3 scheduled_run.py
+
+# Custom period (24 hours)
+python3 scheduled_run.py --hours-back 24
 ```
 
-**View database contents:**
+### Verify Results
+
+Check the output for:
+- Number of songs found and added
+- Number of albums found and liked
+- Database records saved
+
+View the database:
 ```bash
 sqlite3 data/app.db
-.tables
-SELECT * FROM runs;
-SELECT * FROM songs WHERE run_id = 1;
-SELECT * FROM albums WHERE run_id = 1;
+SELECT * FROM runs ORDER BY created_at DESC LIMIT 1;
 .quit
 ```
 
-## Next Steps
+## GitHub Actions Setup (Recommended)
 
-Once everything is working:
+For automatic weekly runs via GitHub Actions, see [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md).
 
-1. **Run a full weekly update**: Set hours_back to 168 (7 days)
-2. **Check historical graphs**: Run multiple times to see trends
-3. **Explore API docs**: http://localhost:8000/docs
-4. **View past runs**: Click on any run in the history table
+This provides:
+- Automatic execution every Friday at 9:20 AM Eastern
+- Manual trigger capability
+- Automatic token refresh and persistence
+- Artifact tracking
 
-## Understanding the Flow
+## Troubleshooting
 
-1. **Submit Run**: User enters hours → POST /api/runs/
-2. **Background Task**: Scripts execute in background
-3. **Polling**: Frontend polls GET /api/runs/{id} every 2 seconds
-4. **Completion**: Status changes to "completed" with results
-5. **History**: Stats saved to database for graphs
+### Token Issues
 
-## Tips
+**Error: Token file not found**
+```bash
+python3 SC_Token.py
+```
 
-- **Testing**: Use small hour values (24-48) for quick tests
-- **Production runs**: Use 168 hours for weekly updates
-- **Monitoring**: Watch backend logs for detailed execution info
-- **Performance**: Each run takes 10-60 seconds depending on results
-- **Database**: SQLite is perfect for single-user local use
+**Error: 403 Forbidden on token refresh**
+This means your OAuth credentials are invalid or revoked. Run:
+```bash
+python3 SC_Token.py
+```
 
-## Advanced Configuration
+**Token expired mid-run**
+The app automatically refreshes tokens 5 minutes before expiry, but if you see expiry errors:
+```bash
+python3 SC_Token.py
+```
+
+### Database Issues
+
+**Reset database:**
+```bash
+rm data/app.db
+# Next run will create new database
+```
+
+**View all runs:**
+```bash
+sqlite3 data/app.db "SELECT id, created_at, hours_back, songs_count, albums_count, status FROM runs ORDER BY created_at DESC LIMIT 10;"
+```
+
+**View songs from a run:**
+```bash
+sqlite3 data/app.db "SELECT track_title, uploader_username FROM songs WHERE run_id = 1;"
+```
+
+### Script Execution Issues
+
+**Error: Script not found**
+- Verify you're running from the project root directory
+- Check that `getNewSongs.py` and `getNewAlbums.py` exist
+
+**Albums not being liked**
+- Check backend logs for error messages
+- Verify OAuth token has proper permissions
+- Test manually: `python3 getNewAlbums.py`
+
+**Run fails with unclear error**
+- Check the error_message in the database:
+  ```bash
+  sqlite3 data/app.db "SELECT error_message FROM runs WHERE id = (SELECT MAX(id) FROM runs);"
+  ```
+
+## Configuration
 
 ### Environment Variables
 
-Create a `.env` file in the backend directory to override defaults:
+Set these in `secrets.env`:
 
 ```env
-SC_PLAYLIST_ID=your_playlist_id
+SC_CLIENT_ID=your_client_id
+SC_CLIENT_SECRET=your_client_secret
+
+# Optional overrides
+SC_PLAYLIST_ID=1907305003
 SC_FILTER_MODE=activity  # or "upload" or "both"
 ```
 
-### Custom Ports
+### Filter Modes
 
-**Backend on different port:**
+- **activity** (default): Filters by when tracks appeared in your feed
+- **upload**: Filters by actual upload time
+- **both**: Requires both timestamps to be within the window
+
+## Advanced Usage
+
+### Original Scripts
+
+If you want to run the original standalone scripts:
+
 ```bash
-uvicorn app.main:app --reload --port 9000
+# Run everything (songs + albums)
+python3 runzIt.py
+
+# Run songs only
+python3 getNewSongs.py
+
+# Run albums only
+python3 getNewAlbums.py
 ```
 
-Update `frontend/vite.config.ts` proxy target to match.
+### Backend API (Development)
 
-**Frontend on different port:**
+For development or testing, you can run the FastAPI backend:
+
 ```bash
-npm run dev -- --port 3000
+cd backend
+source venv/bin/activate
+uvicorn app.main:app --reload --port 8000
 ```
 
-Update CORS settings in `backend/app/main.py`.
+Then test endpoints:
+```bash
+curl http://localhost:8000/api/health
+curl http://localhost:8000/api/auth/status
+```
+
+## Understanding the Flow
+
+1. **CLI Execution**: `scheduled_run.py` starts and loads OAuth token
+2. **Token Refresh**: Checks if token expires soon, refreshes if needed
+3. **Script Execution**: Dynamically imports and runs getNewSongs.py and getNewAlbums.py
+4. **Data Collection**: Gathers songs and albums with metadata
+5. **Database Save**: Records all results to SQLite database
+6. **Exit Code**: Returns 0 on success, 1 on failure
+
+## Database Schema
+
+```sql
+-- Run execution records
+runs (id, created_at, hours_back, start_time, end_time, status,
+      songs_count, albums_count, error_message, duration_seconds)
+
+-- Songs found in each run
+songs (id, run_id, track_id, track_title, track_permalink_url,
+       uploader_username, uploaded_at, activity_created_at)
+
+-- Albums found and liked in each run
+albums (id, run_id, playlist_id, title, playlist_type, permalink_url,
+        uploader, track_count, activity_created_at, liked)
+```
+
+## Tips
+
+- **Testing**: Use `--hours-back 24` for quick tests (10-30 seconds)
+- **Production runs**: Use `--hours-back 168` for full weekly updates (30-90 seconds)
+- **Monitoring**: Watch the console output for detailed execution info
+- **Database**: Query `sqlite3 data/app.db` to review historical data
+- **Token management**: Automatic refresh happens on every run
 
 ## Support
 
 If you encounter issues not covered here:
 
-1. Check backend terminal logs
-2. Check browser console (F12)
-3. Review API documentation at /docs
-4. Verify secrets.env and sc_token.json exist
-5. Try running standalone scripts to isolate issues:
+1. Check console output for error messages
+2. Review database error_message column:
+   ```bash
+   sqlite3 data/app.db "SELECT error_message FROM runs ORDER BY created_at DESC LIMIT 1;"
+   ```
+3. Try running standalone scripts to isolate issues:
    ```bash
    python3 getNewSongs.py
    python3 getNewAlbums.py
    ```
+4. Verify secrets.env and sc_token.json exist and are valid
+
+## What's Next?
+
+- **Automation**: See [GITHUB_ACTIONS_SETUP.md](GITHUB_ACTIONS_SETUP.md) for scheduling
+- **Details**: See [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) for architecture
+- **API**: See [backend/requirements.txt](backend/requirements.txt) for dependencies
 
 ## Security Notes
 
 - This app is designed for **local single-user** use
-- OAuth tokens stored in `sc_token.json` (keep private)
+- OAuth tokens stored in `sc_token.json` (keep private, don't commit to git)
 - Database at `data/app.db` (local SQLite file)
-- No network exposure - localhost only
+- For GitHub Actions: Use repository secrets (SC_SECRETS_ENV, SC_TOKEN_JSON)
 - Not suitable for multi-user deployment without authentication
-
-## What's Next?
-
-After successful setup, see `README_WEB_APP.md` for:
-- Architecture details
-- API endpoint documentation
-- Development guidelines
-- Database schema
-- Future enhancements
