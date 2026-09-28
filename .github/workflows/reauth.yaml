@@ -1,0 +1,49 @@
+name: Re-authorize SoundCloud
+on:
+  workflow_dispatch:
+    inputs:
+      code:
+        description: Authorization code
+        required: true
+      code_verifier:
+        description: PKCE code verifier
+        required: true
+jobs:
+  reauth:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exchange code and save token
+        env:
+          SC_SECRETS_ENV: ${{ secrets.SC_SECRETS_ENV }}
+          CODE: ${{ inputs.code }}
+          VERIFIER: ${{ inputs.code_verifier }}
+          GH_TOKEN: ${{ secrets.GH_ACTIONS_SECRET_PAT }}
+        run: |
+          printf '%s' "$SC_SECRETS_ENV" > secrets.env
+          python3 - <<'PY'
+          import json, os, time, urllib.parse, urllib.request, urllib.error
+          env = {}
+          for line in open("secrets.env").read().splitlines():
+              if "=" in line and not line.startswith("#"):
+                  k, v = line.split("=", 1)
+                  env[k.strip()] = v.strip().strip('"\'')
+          data = urllib.parse.urlencode({
+              "grant_type": "authorization_code",
+              "client_id": env["SC_CLIENT_ID"],
+              "client_secret": env["SC_CLIENT_SECRET"],
+              "redirect_uri": "http://127.0.0.1:8000/auth-callback",
+              "code": os.environ["CODE"].strip(),
+              "code_verifier": os.environ["VERIFIER"].strip(),
+          }).encode()
+          req = urllib.request.Request("https://secure.soundcloud.com/oauth/token",
+                                       data=data, headers={"Accept": "application/json"})
+          try:
+              tok = json.load(urllib.request.urlopen(req, timeout=30))
+          except urllib.error.HTTPError as e:
+              raise SystemExit(f"Exchange failed: {e.code} {e.read().decode()}")
+          tok["expires_at"] = time.time() + tok.get("expires_in", 3600)
+          json.dump(tok, open("sc_token.json", "w"), indent=2)
+          print("Token saved. Refresh token present:", "refresh_token" in tok)
+          PY
+          gh secret set SC_TOKEN_JSON < sc_token.json
