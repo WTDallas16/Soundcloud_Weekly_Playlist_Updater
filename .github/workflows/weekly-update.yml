@@ -124,7 +124,14 @@ jobs:
           git push
 
       - name: Persist refreshed token secret
-        if: success() && (github.event_name == 'workflow_dispatch' || steps.schedule_guard.outputs.should_run == 'true') && env.GH_ACTIONS_SECRET_PAT != ''
+        if: always() && (github.event_name == 'workflow_dispatch' || steps.schedule_guard.outputs.should_run == 'true') && env.GH_ACTIONS_SECRET_PAT != ''
         env:
           GH_TOKEN: ${{ env.GH_ACTIONS_SECRET_PAT }}
-        run: gh secret set SC_TOKEN_JSON < sc_token.json
+          OLD_TOKEN: ${{ secrets.SC_TOKEN_JSON }}
+        run: |
+          [ -s sc_token.json ] || { echo "No token file"; exit 0; }
+          if [ "$(cat sc_token.json)" = "$OLD_TOKEN" ]; then
+            echo "Token unchanged"; exit 0
+          fi
+          gh secret set SC_TOKEN_JSON < sc_token.json
+
